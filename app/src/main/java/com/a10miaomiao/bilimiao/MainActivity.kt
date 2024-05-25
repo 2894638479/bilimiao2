@@ -36,7 +36,10 @@ import com.a10miaomiao.bilimiao.comm.delegate.sheet.BottomSheetDelegate
 import com.a10miaomiao.bilimiao.comm.delegate.theme.ThemeDelegate
 import com.a10miaomiao.bilimiao.comm.mypage.MyPage
 import com.a10miaomiao.bilimiao.comm.mypage.MyPageConfigInfo
+import com.a10miaomiao.bilimiao.comm.navigation.NavHosts
 import com.a10miaomiao.bilimiao.comm.navigation.navigateToCompose
+import com.a10miaomiao.bilimiao.comm.navigation.stopSameIdAndArgs
+import com.a10miaomiao.bilimiao.comm.navigation.stopSameUrl
 import com.a10miaomiao.bilimiao.comm.utils.ScreenDpiUtil
 import com.a10miaomiao.bilimiao.config.config
 import com.a10miaomiao.bilimiao.page.MainBackPopupMenu
@@ -57,7 +60,8 @@ class MainActivity
     : AppCompatActivity(),
     DIAware,
     NavController.OnDestinationChangedListener,
-    FragmentOnAttachListener {
+    FragmentOnAttachListener,
+    NavHosts {
 
     lateinit var ui: MainUi
 
@@ -85,13 +89,13 @@ class MainActivity
     private var subNavHostFragment: NavHostFragment? = null
     private var subNavController: NavController? = null
 
-    val currentNav: NavHostFragment
+    override val currentNavHostFragment: NavHostFragment
         get() = if (ui.root.focusOnMain) navHostFragment else subNavHostFragment ?: navHostFragment
-    val anotherNav: NavHostFragment
+    override val anotherNavHostFragment: NavHostFragment
         get() = if (!ui.root.focusOnMain) navHostFragment else subNavHostFragment ?: navHostFragment
 
     //指示器，指示新页面该出现的地方
-    val pointerNav: NavHostFragment get() {
+    override val pointerNavHostFragment: NavHostFragment get() {
         return if (ui.root.subContentShown) {
             if (ui.root.pointerExchanged == ui.root.contentExchanged) {
                 navHostFragment
@@ -99,9 +103,11 @@ class MainActivity
                 subNavHostFragment ?: navHostFragment
             }
         } else {
-            currentNav
+            currentNavHostFragment
         }
     }
+
+    override fun NavController.navigateCompose(url: String, navOptions: NavOptions?) = navigateToCompose(url, navOptions)
 
 
     var pageConfig: MyPageConfigInfo? = null
@@ -213,7 +219,7 @@ class MainActivity
         ui.mAppBar.onBackClick = this.onBackClick
         ui.mAppBar.onBackLongClick = this.onBackLongClick
         ui.mAppBar.onMenuItemClick = {
-            val fragment = currentNav.childFragmentManager.primaryNavigationFragment
+            val fragment = currentNavHostFragment.childFragmentManager.primaryNavigationFragment
             if (fragment is MyPage) {
                 fragment.onMenuItemClick(it, it.prop)
             }
@@ -253,7 +259,7 @@ class MainActivity
                 .setPopExitAnim(R.anim.miao_fragment_close_exit)
                 .build()
             try {
-                pointerNav.navController.navigate(uri, navOptions)
+                pointerNavHostFragment.navController.navigate(uri, navOptions)
                 true
             } catch (e: IllegalArgumentException) {
             }
@@ -277,7 +283,7 @@ class MainActivity
 //        ui.mAppBar.cleanProp()
 
         //将焦点给新页面
-        if (controller == anotherNav.navController) {
+        if (controller === anotherNavHostFragment.navController) {
             if (ui.root.focusOnMain) {
                 ui.root.subContent?.requestFocus()
             } else {
@@ -301,13 +307,13 @@ class MainActivity
 
     fun notifyFocusChanged() {
         ui.mAppBar.canBack =
-            currentNav.navController.currentDestination?.id != MainNavGraph.dest.main
+            currentNavHostFragment.navController.currentDestination?.id != MainNavGraph.dest.main
         ui.mAppBar.showPointer = ui.root.subContentShown
         ui.mAppBar.pointerOrientation = ui.root.pointerExchanged
         notifyConfigChanged()
     }
     fun notifyConfigChanged(){
-        currentNav.childFragmentManager.fragments.lastOrNull().let {
+        currentNavHostFragment.childFragmentManager.fragments.lastOrNull().let {
             if(it is MyPage){
                 setMyPageConfig(it.pageConfig.configInfo)
             }
@@ -328,7 +334,7 @@ class MainActivity
     }
 
     private fun goBackHome(): Boolean {
-        return currentNav.navController.popBackStack(MainNavGraph.dest.main, false)
+        return currentNavHostFragment.navController.popBackStack(MainNavGraph.dest.main, false)
     }
 
     val onBackClick = View.OnClickListener {
@@ -398,7 +404,7 @@ class MainActivity
     }
 
     fun searchSelfPage(keyword: String) {
-        val fragment = currentNav.childFragmentManager.primaryNavigationFragment
+        val fragment = currentNavHostFragment.childFragmentManager.primaryNavigationFragment
         if (fragment is MyPage) {
             fragment.onSearchSelfPage(this, keyword)
         }
@@ -533,7 +539,8 @@ class MainActivity
                     val pageUrl = arguments.getString(SearchActivity.KEY_URL)!!
                     val isComposePage = arguments.getBoolean(SearchActivity.KEY_IS_COMPOSE_PAGE, false)
                     if (isComposePage) {
-                        pointerNav.navController.navigateToCompose(pageUrl)
+                        val nav = currentNavHostFragment.navController
+                        nav.navigateToCompose(pageUrl)
                     } else {
                         val navOptions = NavOptions.Builder()
                             .setEnterAnim(R.anim.miao_fragment_open_enter)
@@ -541,17 +548,23 @@ class MainActivity
                             .setPopEnterAnim(R.anim.miao_fragment_close_enter)
                             .setPopExitAnim(R.anim.miao_fragment_close_exit)
                             .build()
-                        pointerNav.navController.navigate(Uri.parse(pageUrl), navOptions)
+                        val nav = currentNavHostFragment.navController
+                        val uri = Uri.parse(pageUrl)
+                        nav.stopSameUrl(uri)
+                            ?.navigate(uri, navOptions)
                     }
                     return
                 }
                 val mode = arguments.getInt(SearchActivity.KEY_MODE)
                 val keyword = arguments.getString(SearchActivity.KEY_KEYWORD, "")
                 if (mode == 0) {
-                    pointerNav.navController.navigate(
-                        SearchResultFragment.actionId,
-                        SearchResultFragment.createArguments(keyword),
-                    )
+                    val nav = currentNavHostFragment.navController
+                    val args = SearchResultFragment.createArguments(keyword)
+                    nav.stopSameIdAndArgs(SearchResultFragment.id, args)
+                        ?.navigate(
+                            SearchResultFragment.actionId,
+                            args,
+                        )
                 } else {
                     searchSelfPage(keyword)
                 }
@@ -647,13 +660,13 @@ class MainActivity
 
     private fun onHostNavBack(): Boolean {
         if (ui.mAppBar.canBack) {
-            val currentDestinationId = currentNav.navController.currentDestination?.id
+            val currentDestinationId = currentNavHostFragment.navController.currentDestination?.id
             if (currentDestinationId == MainNavGraph.dest.compose) {
-                (currentNav.childFragmentManager.fragments.last()
+                (currentNavHostFragment.childFragmentManager.fragments.last()
                         as? ComposeFragment)?.onBackPressed()
                 return true
             }
-            currentNav.navController.popBackStack()
+            currentNavHostFragment.navController.popBackStack()
             return true
         } else {
             return false
@@ -686,15 +699,4 @@ class MainActivity
         val newContext = newBase.createConfigurationContext(configuration)
         super.attachBaseContext(newContext)
     }
-
-    fun getPrimaryNavigationFragment(nav: NavController): Fragment? {
-        return if (nav === navController) {
-            navHostFragment.childFragmentManager.primaryNavigationFragment
-        } else if (nav === subNavController) {
-            subNavHostFragment?.childFragmentManager?.primaryNavigationFragment
-        } else {
-            null
-        }
-    }
-
 }

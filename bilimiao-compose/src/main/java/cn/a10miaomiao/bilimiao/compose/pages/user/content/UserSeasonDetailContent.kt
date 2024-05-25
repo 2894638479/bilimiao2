@@ -53,6 +53,8 @@ import com.a10miaomiao.bilimiao.comm.mypage.MenuItemPropInfo
 import com.a10miaomiao.bilimiao.comm.mypage.MenuKeys
 import com.a10miaomiao.bilimiao.comm.mypage.SearchConfigInfo
 import com.a10miaomiao.bilimiao.comm.mypage.myMenuItem
+import com.a10miaomiao.bilimiao.comm.navigation.pointerOrSelf
+import com.a10miaomiao.bilimiao.comm.navigation.stopSameUrl
 import com.a10miaomiao.bilimiao.comm.network.BiliGRPCHttp
 import com.a10miaomiao.bilimiao.comm.store.UserStore
 import com.a10miaomiao.bilimiao.comm.utils.NumberUtil
@@ -136,9 +138,11 @@ private class UserSeasonDetailViewModel(
     }
 
     fun toVideoDetailPage(item: bilibili.app.view.v1.Episode) {
-        fragment.findNavController()
-            .navigate(
-                Uri.parse("bilimiao://video/" + item.aid),
+        val uri = Uri.parse("bilimiao://video/" + item.aid)
+        fragment.findNavController().pointerOrSelf()
+            .stopSameUrl(uri)
+            ?.navigate(
+                uri,
                 defaultNavOptions,
             )
     }

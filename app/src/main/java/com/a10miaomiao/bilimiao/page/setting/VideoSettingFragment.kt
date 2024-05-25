@@ -25,6 +25,7 @@ import com.a10miaomiao.bilimiao.comm.miaoBindingUi
 import com.a10miaomiao.bilimiao.comm.mypage.MyPage
 import com.a10miaomiao.bilimiao.comm.mypage.myPageConfig
 import com.a10miaomiao.bilimiao.comm.navigation.FragmentNavigatorBuilder
+import com.a10miaomiao.bilimiao.comm.navigation.currentOrSelf
 import com.a10miaomiao.bilimiao.comm.navigation.navigateToCompose
 import com.a10miaomiao.bilimiao.comm.recycler._miaoLayoutManage
 import com.a10miaomiao.bilimiao.comm.views
@@ -268,7 +269,7 @@ class VideoSettingFragment : Fragment(), DIAware, MyPage
             summary = "滴，出差卡"
 
             onClick {
-                val nav = findNavController()
+                val nav = findNavController().currentOrSelf()
                 nav.navigateToCompose(ProxySettingPage())
                 true
             }

@@ -12,7 +12,6 @@ import androidx.lifecycle.coroutineScope
 import androidx.navigation.NavType
 import androidx.navigation.Navigation
 import androidx.navigation.fragment.FragmentNavigatorDestinationBuilder
-import androidx.navigation.fragment.NavHostFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import cn.a10miaomiao.miao.binding.android.view._bottomPadding
 import cn.a10miaomiao.miao.binding.android.view._leftPadding
@@ -22,8 +21,6 @@ import cn.a10miaomiao.miao.binding.android.view._tag
 import cn.a10miaomiao.miao.binding.android.view._topPadding
 import cn.a10miaomiao.miao.binding.android.widget._isChecked
 import cn.a10miaomiao.miao.binding.android.widget._text
-import com.a10miaomiao.bilimiao.MainActivity
-import com.a10miaomiao.bilimiao.R
 import com.a10miaomiao.bilimiao.comm.connectUi
 import com.a10miaomiao.bilimiao.comm.diViewModel
 import com.a10miaomiao.bilimiao.comm.entity.media.MediaListInfo
@@ -33,6 +30,7 @@ import com.a10miaomiao.bilimiao.comm.mypage.MyPage
 import com.a10miaomiao.bilimiao.comm.mypage.myPageConfig
 import com.a10miaomiao.bilimiao.comm.navigation.FragmentNavigatorBuilder
 import com.a10miaomiao.bilimiao.comm.navigation.MainNavArgs
+import com.a10miaomiao.bilimiao.comm.navigation.NavHosts
 import com.a10miaomiao.bilimiao.comm.progressBar
 import com.a10miaomiao.bilimiao.comm.recycler._miaoAdapter
 import com.a10miaomiao.bilimiao.comm.recycler._miaoLayoutManage
@@ -119,9 +117,7 @@ class VideoAddFavoriteFragment : Fragment(), DIAware, MyPage {
         val delIds = viewModel.list
             .filter { it.fav_state == 1 && !(viewModel.selectedMap[it.id] ?: true) }
             .map { it.id }
-        val navHostFragment = (activity as? MainActivity)?.currentNav
-            ?: requireActivity().supportFragmentManager
-                .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        val navHostFragment = (activity as? NavHosts)?.currentNavHostFragment ?: return
         val fragment = navHostFragment.childFragmentManager.primaryNavigationFragment
         if (fragment is VideoInfoFragment) {
             fragment.confirmFavorite(

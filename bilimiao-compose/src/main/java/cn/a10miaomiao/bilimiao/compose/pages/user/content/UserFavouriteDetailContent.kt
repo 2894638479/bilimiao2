@@ -55,6 +55,8 @@ import com.a10miaomiao.bilimiao.comm.mypage.MenuItemPropInfo
 import com.a10miaomiao.bilimiao.comm.mypage.MenuKeys
 import com.a10miaomiao.bilimiao.comm.mypage.SearchConfigInfo
 import com.a10miaomiao.bilimiao.comm.mypage.myMenuItem
+import com.a10miaomiao.bilimiao.comm.navigation.pointerOrSelf
+import com.a10miaomiao.bilimiao.comm.navigation.stopSameUrl
 import com.a10miaomiao.bilimiao.comm.network.BiliApiService
 import com.a10miaomiao.bilimiao.comm.network.MiaoHttp.Companion.gson
 import com.a10miaomiao.bilimiao.comm.store.UserStore
@@ -148,9 +150,11 @@ private class UserFavouriteDetailViewModel(
     }
 
     fun toVideoDetailPage(item: MediasInfo) {
-        fragment.findNavController()
-            .navigate(
-                Uri.parse("bilimiao://video/" + item.id),
+        val uri = Uri.parse("bilimiao://video/" + item.id)
+        fragment.findNavController().pointerOrSelf()
+            .stopSameUrl(uri)
+            ?.navigate(
+                uri,
                 defaultNavOptions,
             )
     }

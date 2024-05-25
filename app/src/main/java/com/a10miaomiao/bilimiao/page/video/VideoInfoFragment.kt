@@ -33,7 +33,6 @@ import cn.a10miaomiao.miao.binding.android.widget._textColor
 import cn.a10miaomiao.miao.binding.android.widget._textColorResource
 import cn.a10miaomiao.miao.binding.miaoEffect
 import cn.a10miaomiao.miao.binding.miaoMemo
-import com.a10miaomiao.bilimiao.MainActivity
 import com.a10miaomiao.bilimiao.R
 import com.a10miaomiao.bilimiao.comm.BiliNavigation
 import com.a10miaomiao.bilimiao.comm.MiaoUI
@@ -58,6 +57,9 @@ import com.a10miaomiao.bilimiao.comm.mypage.myMenuItem
 import com.a10miaomiao.bilimiao.comm.mypage.myPageConfig
 import com.a10miaomiao.bilimiao.comm.navigation.FragmentNavigatorBuilder
 import com.a10miaomiao.bilimiao.comm.navigation.MainNavArgs
+import com.a10miaomiao.bilimiao.comm.navigation.currentOrSelf
+import com.a10miaomiao.bilimiao.comm.navigation.pointerOrSelf
+import com.a10miaomiao.bilimiao.comm.navigation.stopSameIdAndArgs
 import com.a10miaomiao.bilimiao.comm.recycler.GridAutofitLayoutManager
 import com.a10miaomiao.bilimiao.comm.recycler._miaoAdapter
 import com.a10miaomiao.bilimiao.comm.recycler._miaoLayoutManage
@@ -243,15 +245,15 @@ class VideoInfoFragment : Fragment(), DIAware, MyPage {
             1 -> {
                 // 评论
                 if (info != null) {
-                    val nav = (activity as? MainActivity)?.pointerNav?.navController
-                        ?: requireActivity().findNavController(R.id.nav_host_fragment)
+                    val nav = findNavController().pointerOrSelf()
                     val args = VideoCommentListFragment.createArguments(
                         info.aid,
                         info.title,
                         info.pic,
                         info.owner.name,
                     )
-                    nav.navigate(VideoCommentListFragment.actionId, args)
+                    nav.stopSameIdAndArgs(VideoCommentListFragment.id,args)
+                        ?.navigate(VideoCommentListFragment.actionId, args)
                 }
             }
             2 -> {
@@ -386,7 +388,7 @@ class VideoInfoFragment : Fragment(), DIAware, MyPage {
         when (urlType) {
             "AV", "BV" -> {
                 val args = createArguments(urlId)
-                Navigation.findNavController(view)
+                Navigation.findNavController(view).currentOrSelf()
                     .navigate(actionId, args)
             }
             else -> {
@@ -397,7 +399,7 @@ class VideoInfoFragment : Fragment(), DIAware, MyPage {
 
     private fun toUser(view: View, mid: String) {
         val args = UserFragment.createArguments(mid)
-        Navigation.findNavController(view)
+        Navigation.findNavController(view).currentOrSelf()
             .navigate(UserFragment.actionId, args)
     }
 
@@ -455,7 +457,7 @@ class VideoInfoFragment : Fragment(), DIAware, MyPage {
 
     private val handleTagsItemClick = OnItemClickListener { adapter, view, position ->
         val item = viewModel.tags[position]
-        val nav = findNavController()
+        val nav = findNavController().currentOrSelf()
         val args = SearchResultFragment.createArguments(item.tag_name)
         nav.navigate(SearchResultFragment.actionId, args)
     }
@@ -465,7 +467,7 @@ class VideoInfoFragment : Fragment(), DIAware, MyPage {
         if (item is VideoRelateInfo) {
             if (item.goto == "av") {
                 val args = createArguments(item.aid!!)
-                Navigation.findNavController(view)
+                Navigation.findNavController(view).currentOrSelf()
                     .navigate(actionId, args)
             } else {
                 val url = item.uri
